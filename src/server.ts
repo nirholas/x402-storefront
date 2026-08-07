@@ -7,8 +7,6 @@
  */
 import "dotenv/config";
 import express from "express";
-import { paymentMiddleware } from "x402-express";
-import type { RoutesConfig, Network } from "x402-express";
 import { join } from "node:path";
 import {
   ROOT,
@@ -19,51 +17,55 @@ import {
   AuthError,
 } from "./service.js";
 import { verify } from "./sign.js";
+import { buildRails, describeRails, paywall, type RoutePrices } from "./payments.js";
+import { solanaCheckoutHandler } from "./solana-checkout.js";
 
-const payTo = process.env.PAY_TO_ADDRESS;
-if (!payTo || !/^0x[0-9a-fA-F]{40}$/.test(payTo)) {
-  console.error(
-    "FATAL: PAY_TO_ADDRESS env var is required (0x… EVM address that receives USDC).\n" +
-      "  export PAY_TO_ADDRESS=0xYourWalletAddress",
-  );
-  process.exit(1);
-}
-
-const network = (process.env.NETWORK ?? "base-sepolia") as Network;
-const facilitatorUrl = (process.env.FACILITATOR_URL ??
-  "https://x402.org/facilitator") as `${string}://${string}`;
-
+const rails = buildRails();
 const catalog = loadCatalog();
 
 /** One exact paid route per SKU, priced from the catalog. */
-const routePrices: RoutesConfig = {};
+const routePrices: RoutePrices = {};
 for (const item of catalog.items) {
   routePrices[`GET /buy/${item.sku}`] = {
     price: item.price,
-    network,
-    config: {
-      description: `${item.name} — ${item.type === "digital" ? "delivered in-response via signed download URL" : "signed order confirmation + fulfillment record"}`,
-      mimeType: "application/json",
-    },
+    description: `${item.name} — ${
+      item.type === "digital"
+        ? "signed time-limited download URL + license, in-response"
+        : "signed order confirmation + fulfillment record, in-response"
+    }`,
+    mimeType: "application/json",
   };
 }
 
 const app = express();
 app.use(express.json());
 
-app.use(paymentMiddleware(payTo as `0x${string}`, routePrices, { url: facilitatorUrl }));
+/**
+ * Solana checkout helper. Phantom signs transactions but cannot build them, so
+ * the browser modal POSTs here to assemble the SPL transfer and wrap the signed
+ * transaction into an X-PAYMENT envelope. Agents paying programmatically never
+ * touch this route.
+ */
+app.all("/api/x402-checkout", solanaCheckoutHandler());
+
+/** Dual-rail paywall — pay in USDC on Base or Solana, the client picks. */
+app.use(paywall(routePrices, rails));
 
 // ————— Free routes —————
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, service: "x402-storefront", network });
+  res.json({ ok: true, service: "x402-storefront", rails: rails.map((r) => r.network) });
 });
 
 app.get("/catalog", (_req, res) => {
   res.json({
     store: catalog.store,
-    network,
-    payment: { protocol: "x402", asset: "USDC", facilitator: facilitatorUrl },
+    payment: {
+      protocol: "x402",
+      asset: "USDC",
+      note: "Pay in USDC on Base or Solana — your client picks the rail.",
+      rails: rails.map((r) => ({ rail: r.id, network: r.network, payTo: r.payTo })),
+    },
     items: catalog.items.map((i) => ({
       sku: i.sku,
       type: i.type,
@@ -147,14 +149,16 @@ function handleError(err: unknown, res: express.Response): void {
 
 const port = Number(process.env.PORT ?? 4021);
 app.listen(port, () => {
-  console.log(`\nx402-storefront listening on http://localhost:${port}`);
-  console.log(`  network: ${network}  facilitator: ${facilitatorUrl}  payTo: ${payTo}\n`);
-  console.log("  Free routes:");
+  console.log(`\nx402-storefront listening on http://localhost:${port}\n`);
+  console.log("  Payment rails (USDC — the client picks):");
+  for (const line of describeRails(rails)) console.log(`    ${line}`);
+  console.log("\n  Free routes:");
   console.log("    GET /catalog             item list with prices");
   console.log("    GET /download/:token     redeem a signed download token");
   console.log("    GET /verify              verify any signed artifact");
-  console.log("    GET /.well-known/x402    machine-readable price sheet\n");
-  console.log("  Paid routes (x402, USDC):");
+  console.log("    GET /.well-known/x402    machine-readable price sheet");
+  console.log("    GET /                    human checkout demo\n");
+  console.log("  Paid routes (x402, USDC on Base or Solana):");
   for (const item of catalog.items) {
     console.log(`    GET /buy/${item.sku}`.padEnd(40) + `${item.price}  ${item.name}`);
   }

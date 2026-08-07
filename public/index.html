@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>x402 Storefront — pay with USDC, no account</title>
+<title>x402 Storefront — pay with USDC on Base or Solana, no account</title>
 <style>
   :root {
     --accent: #0052ff;
@@ -46,9 +46,10 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>x402 Storefront <span class="badge">USDC · Base</span></h1>
+    <h1>x402 Storefront <span class="badge">USDC · Base + Solana</span></h1>
     <p>Buy digital and physical goods with one click — no account, no card form.
-       Payments settle over the <a href="https://x402.org">x402 protocol</a>.
+       Payments settle over the <a href="https://x402.org">x402 protocol</a>:
+       <b>pay in USDC on Base or Solana</b>, your wallet picks the rail.
        Agents: see <a href="skill.md">skill.md</a> and <a href="/.well-known/x402">/.well-known/x402</a>.</p>
   </header>
 
@@ -61,8 +62,9 @@
   </section>
 
   <footer>
-    Powered by the drop-in <code>@three-ws/x402-payment-modal</code> — sign-in-with-wallet
-    re-entry and per-site spending caps built in. Source:
+    Powered by the drop-in <code>@three-ws/x402-payment-modal</code> — reads both rails
+    from the 402 challenge (Phantom for Solana, an injected wallet for Base), with
+    sign-in-with-wallet re-entry and per-site spending caps built in. Source:
     <a href="https://github.com/nirholas/x402-storefront">github.com/nirholas/x402-storefront</a>
   </footer>
 </div>

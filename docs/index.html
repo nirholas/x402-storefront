@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>x402-storefront — self-hosted store with x402 checkout</title>
-<meta name="description" content="Sell digital goods delivered in-response and physical goods with signed order confirmations. USDC micropayments over HTTP 402.">
+<meta name="description" content="Sell digital goods delivered in-response and physical goods with signed order confirmations. USDC micropayments over HTTP 402, on Base or Solana.">
 <style>
   :root {
     --accent: #0052ff; --bg: #ffffff; --fg: #10131a; --muted: #5a6072;
@@ -45,6 +45,12 @@
   .flow .step b { display: block; font-size: 1.05rem; }
   .flow .step small { color: var(--muted); }
   .flow .arrow { color: var(--accent); font-size: 1.4rem; font-weight: 700; }
+  .rails { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
+  .rail { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem 1.2rem; }
+  .rail h3 { margin: 0 0 .3rem; font-size: 1rem; }
+  .rail code { font-size: .78rem; word-break: break-all; color: var(--muted); }
+  .pill { display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .04em;
+          padding: .2rem .6rem; border-radius: 999px; background: var(--accent); color: #fff; }
   footer { margin: 4rem 0 2.5rem; text-align: center; color: var(--muted); font-size: .88rem; }
   footer a { color: var(--accent); }
   a { color: var(--accent); }
@@ -55,7 +61,8 @@
   <section class="hero">
     <h1>x402-<span>storefront</span></h1>
     <p class="tag">A self-hosted store with x402 checkout. Digital goods delivered in the paid
-      response; physical goods confirmed with signed fulfillment records. USDC on Base, no accounts.</p>
+      response; physical goods confirmed with signed fulfillment records.
+      Pay in USDC on <b>Base or Solana</b> — your client picks the rail. No accounts.</p>
     <div class="install"><code>git clone https://github.com/nirholas/x402-storefront && cd x402-storefront && npm install && npm run dev</code></div>
     <div class="links">
       <a class="primary" href="https://github.com/nirholas/x402-storefront">GitHub</a>
@@ -81,11 +88,31 @@
   </table>
   <p>All items and prices are configured in <code>config/catalog.json</code> — paid routes are generated from it.</p>
 
+  <h2>Two rails, one challenge</h2>
+  <p>Every 402 lists both networks. A buyer holding USDC on Base pays on Base; a buyer
+     holding USDC on Solana pays on Solana. Same route, same artifact, same price.</p>
+  <div class="rails">
+    <div class="rail">
+      <span class="pill">EVM</span>
+      <h3>USDC on Base</h3>
+      <p style="margin:.4rem 0 .3rem;color:var(--muted);font-size:.9rem">
+        <code>base-sepolia</code> by default, <code>base</code> for mainnet. EIP-3009 transfer authorization.</p>
+      <code>0x40252CFDF8B20Ed757D61ff157719F33Ec332402</code>
+    </div>
+    <div class="rail">
+      <span class="pill">SVM</span>
+      <h3>USDC on Solana</h3>
+      <p style="margin:.4rem 0 .3rem;color:var(--muted);font-size:.9rem">
+        <code>solana</code> mainnet by default, <code>solana-devnet</code> for testing. SPL transfer.</p>
+      <code>WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW</code>
+    </div>
+  </div>
+
   <h2>How a purchase flows</h2>
   <div class="flow">
-    <div class="step"><b>402</b><small>server quotes price<br>in USDC</small></div>
+    <div class="step"><b>402</b><small>quote in USDC on<br>Base <i>and</i> Solana</small></div>
     <div class="arrow">→</div>
-    <div class="step"><b>sign</b><small>client signs USDC<br>authorization</small></div>
+    <div class="step"><b>sign</b><small>client picks a rail<br>and signs</small></div>
     <div class="arrow">→</div>
     <div class="step"><b>retry</b><small>same request +<br><code>X-PAYMENT</code></small></div>
     <div class="arrow">→</div>
@@ -94,11 +121,12 @@
 
   <h2>Quickstart</h2>
   <pre><code># 1. Run the store
-cp .env.example .env       # set PAY_TO_ADDRESS=0xYourWallet
+cp .env.example .env       # ships with working payTo addresses for both rails
 npm run dev                # http://localhost:4021
 
-# 2. See a 402 quote (no wallet needed)
-curl -si http://localhost:4021/buy/art-payment-required | head -20
+# 2. See the dual-rail 402 quote (no wallet needed)
+curl -s http://localhost:4021/buy/art-payment-required \
+  | jq '.accepts[] | {network, payTo, maxAmountRequired}'
 
 # 3. Buy for real on Base Sepolia (free test USDC: faucet.circle.com)
 export PRIVATE_KEY=0x…
@@ -108,11 +136,14 @@ npm run client             # pays, verifies signature, downloads the asset</code
   <p>The store ships a one-page checkout at <code>/</code> (see <code>public/index.html</code>)
      built on the drop-in <code>@three-ws/x402-payment-modal</code>: every item gets a
      <b>Pay &amp; buy</b> button, and the signed artifact renders in-page after payment.
+     The modal reads both rails from the 402 challenge — Phantom for Solana, an injected
+     wallet for Base — and ships SIWX re-entry plus per-site spending caps.
      Run <code>npm run dev</code> and open <a href="http://localhost:4021">localhost:4021</a>.</p>
 
   <footer>
     Apache-2.0 · Part of the <a href="https://github.com/nirholas/x402-suite">x402 Suite</a> ·
-    Built on the <a href="https://x402.org">x402 protocol</a>
+    Built on the <a href="https://x402.org">x402 protocol</a> ·
+    <a href="mailto:nichxbt@gmail.com">nichxbt@gmail.com</a>
   </footer>
 </div>
 </body>

@@ -13,7 +13,7 @@ Machine-readable price sheet: `{BASE_URL}/.well-known/x402`
 ## Endpoints
 
 ### GET /catalog — free
-Returns the store, network, and every item with its price and buy route.
+Returns the store, both payment rails, and every item with its price and buy route.
 
 Response (excerpt):
 ```json
@@ -79,12 +79,39 @@ no whitespace) with the store's `SIGNING_SECRET`.
 
 ## Payment
 
+**Pay in USDC on Base or Solana — your client picks the rail.**
+
 - Protocol: **x402** (HTTP 402 → signed USDC authorization → retry with `X-PAYMENT` header)
-- Network: `base-sepolia` by default (`base` mainnet when the operator sets `NETWORK=base`)
-- Asset: **USDC**; facilitator: `https://x402.org/facilitator` (override: `FACILITATOR_URL`)
-- Pay with `x402-fetch`, or any x402-capable client. First request returns
-  `402` with an `accepts[]` payment-requirements object; sign and retry.
-  Settlement receipt arrives in the `X-PAYMENT-RESPONSE` response header.
+- Asset: **USDC** on both rails
+- Facilitator: `https://x402.org/facilitator` (override: `FACILITATOR_URL`)
+
+| Rail | Network | payTo |
+| --- | --- | --- |
+| EVM | `base-sepolia` (default) or `base` via `NETWORK=base` | `0x40252CFDF8B20Ed757D61ff157719F33Ec332402` |
+| Solana | `solana` (default) or `solana-devnet` via `SOLANA_NETWORK=devnet` | `WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW` |
+
+The first unpaid request returns `402` with an `accepts[]` array holding **one
+entry per rail**. Choose either, sign the payload for that network, and retry
+with `X-PAYMENT: <base64 payload>`:
+
+```json
+{
+  "x402Version": 1,
+  "error": "X-PAYMENT header required — pay in USDC on Base or Solana, your pick.",
+  "accepts": [
+    { "scheme": "exact", "network": "base-sepolia", "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+      "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402", "maxAmountRequired": "10000",
+      "resource": "http://localhost:4021/buy/art-payment-required", "mimeType": "application/json" },
+    { "scheme": "exact", "network": "solana", "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW", "maxAmountRequired": "10000",
+      "resource": "http://localhost:4021/buy/art-payment-required", "mimeType": "application/json" }
+  ]
+}
+```
+
+Pay with `x402-fetch` (EVM), a Solana x402 client, or any x402-capable wallet.
+The settlement receipt — including which rail settled it — arrives in the
+`X-PAYMENT-RESPONSE` response header.
 
 ## Errors
 
@@ -96,3 +123,5 @@ no whitespace) with the store's `SIGNING_SECRET`.
 | 400 | Malformed verify request |
 
 Discovery: this file (skill.md at repo root) + [`/.well-known/x402`]({BASE_URL}/.well-known/x402) + `openapi.json`.
+
+Contact: nichxbt@gmail.com

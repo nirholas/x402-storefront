@@ -2,86 +2,511 @@
   "x402Version": 1,
   "name": "x402-storefront",
   "description": "Self-hosted store with x402 checkout — sell digital goods (delivered in-response) and physical goods (signed order confirmation)",
+  "homepage": "https://nirholas.github.io/x402-storefront/",
+  "repository": "https://github.com/nirholas/x402-storefront",
+  "contact": "nichxbt@gmail.com",
+  "skill": "/skill.md",
+  "payment": {
+    "protocol": "x402",
+    "asset": "USDC",
+    "note": "Pay in USDC on Base or Solana — your client picks the rail.",
+    "rails": [
+      {
+        "rail": "evm",
+        "network": "base-sepolia",
+        "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+        "facilitator": "https://x402.org/facilitator"
+      },
+      {
+        "rail": "solana",
+        "network": "solana",
+        "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+        "facilitator": "https://x402.org/facilitator"
+      }
+    ]
+  },
   "resources": [
     {
       "resource": "GET /buy/guide-agentic-commerce",
-      "description": "Field Guide to Agentic Commerce (digital, markdown) — signed time-limited download URL + license in-response",
+      "description": "Field Guide to Agentic Commerce — signed time-limited download URL + license, in-response",
       "price": "$0.05",
-      "network": "base-sepolia",
       "asset": "USDC",
+      "network": "base-sepolia",
+      "networks": [
+        "base-sepolia",
+        "solana"
+      ],
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "base-sepolia",
+          "asset": "USDC",
+          "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+          "maxAmountRequired": "50000",
+          "mimeType": "application/json"
+        },
+        {
+          "scheme": "exact",
+          "network": "solana",
+          "asset": "USDC",
+          "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+          "maxAmountRequired": "50000",
+          "mimeType": "application/json"
+        }
+      ],
       "outputSchema": {
         "type": "object",
         "properties": {
           "payload": {
             "type": "object",
             "properties": {
-              "orderId": { "type": "string" },
-              "sku": { "type": "string" },
-              "kind": { "const": "digital" },
-              "downloadUrl": { "type": "string" },
-              "downloadExpiresAt": { "type": "string", "format": "date-time" },
-              "contentSha256": { "type": "string" },
-              "license": { "type": "string" }
-            }
+              "orderId": {
+                "type": "string"
+              },
+              "sku": {
+                "type": "string"
+              },
+              "item": {
+                "type": "string"
+              },
+              "kind": {
+                "const": "digital"
+              },
+              "downloadUrl": {
+                "type": "string",
+                "description": "Free redemption route on this host; valid until downloadExpiresAt"
+              },
+              "downloadExpiresAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "contentType": {
+                "type": "string"
+              },
+              "contentSha256": {
+                "type": "string"
+              },
+              "license": {
+                "type": "string"
+              },
+              "purchasedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "orderId",
+              "sku",
+              "kind",
+              "downloadUrl",
+              "contentSha256",
+              "license"
+            ]
           },
-          "signature": { "type": "string" },
-          "algorithm": { "const": "HMAC-SHA256" }
-        }
+          "signature": {
+            "type": "string",
+            "description": "HMAC-SHA256 over the canonical payload"
+          },
+          "algorithm": {
+            "const": "HMAC-SHA256"
+          }
+        },
+        "required": [
+          "payload",
+          "signature",
+          "algorithm"
+        ]
       }
     },
     {
       "resource": "GET /buy/dataset-http-402",
-      "description": "HTTP 402 Dataset (digital, JSON) — signed time-limited download URL + license in-response",
+      "description": "HTTP 402 Dataset — signed time-limited download URL + license, in-response",
       "price": "$0.02",
-      "network": "base-sepolia",
       "asset": "USDC",
-      "outputSchema": { "$ref": "#/resources/0/outputSchema" }
-    },
-    {
-      "resource": "GET /buy/art-payment-required",
-      "description": "\"402 Payment Required\" wall art (digital, SVG) — signed time-limited download URL + license in-response",
-      "price": "$0.01",
       "network": "base-sepolia",
-      "asset": "USDC",
-      "outputSchema": { "$ref": "#/resources/0/outputSchema" }
-    },
-    {
-      "resource": "GET /buy/stickers-x402",
-      "description": "x402 sticker pack (physical) — signed order confirmation + fulfillment record in-response",
-      "price": "$0.10",
-      "network": "base-sepolia",
-      "asset": "USDC",
+      "networks": [
+        "base-sepolia",
+        "solana"
+      ],
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "base-sepolia",
+          "asset": "USDC",
+          "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+          "maxAmountRequired": "20000",
+          "mimeType": "application/json"
+        },
+        {
+          "scheme": "exact",
+          "network": "solana",
+          "asset": "USDC",
+          "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+          "maxAmountRequired": "20000",
+          "mimeType": "application/json"
+        }
+      ],
       "outputSchema": {
         "type": "object",
         "properties": {
           "payload": {
             "type": "object",
             "properties": {
-              "orderId": { "type": "string" },
-              "sku": { "type": "string" },
-              "kind": { "const": "physical" },
+              "orderId": {
+                "type": "string"
+              },
+              "sku": {
+                "type": "string"
+              },
+              "item": {
+                "type": "string"
+              },
+              "kind": {
+                "const": "digital"
+              },
+              "downloadUrl": {
+                "type": "string",
+                "description": "Free redemption route on this host; valid until downloadExpiresAt"
+              },
+              "downloadExpiresAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "contentType": {
+                "type": "string"
+              },
+              "contentSha256": {
+                "type": "string"
+              },
+              "license": {
+                "type": "string"
+              },
+              "purchasedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "orderId",
+              "sku",
+              "kind",
+              "downloadUrl",
+              "contentSha256",
+              "license"
+            ]
+          },
+          "signature": {
+            "type": "string",
+            "description": "HMAC-SHA256 over the canonical payload"
+          },
+          "algorithm": {
+            "const": "HMAC-SHA256"
+          }
+        },
+        "required": [
+          "payload",
+          "signature",
+          "algorithm"
+        ]
+      }
+    },
+    {
+      "resource": "GET /buy/art-payment-required",
+      "description": "\"402 Payment Required\" wall art (SVG) — signed time-limited download URL + license, in-response",
+      "price": "$0.01",
+      "asset": "USDC",
+      "network": "base-sepolia",
+      "networks": [
+        "base-sepolia",
+        "solana"
+      ],
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "base-sepolia",
+          "asset": "USDC",
+          "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+          "maxAmountRequired": "10000",
+          "mimeType": "application/json"
+        },
+        {
+          "scheme": "exact",
+          "network": "solana",
+          "asset": "USDC",
+          "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+          "maxAmountRequired": "10000",
+          "mimeType": "application/json"
+        }
+      ],
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "orderId": {
+                "type": "string"
+              },
+              "sku": {
+                "type": "string"
+              },
+              "item": {
+                "type": "string"
+              },
+              "kind": {
+                "const": "digital"
+              },
+              "downloadUrl": {
+                "type": "string",
+                "description": "Free redemption route on this host; valid until downloadExpiresAt"
+              },
+              "downloadExpiresAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "contentType": {
+                "type": "string"
+              },
+              "contentSha256": {
+                "type": "string"
+              },
+              "license": {
+                "type": "string"
+              },
+              "purchasedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "orderId",
+              "sku",
+              "kind",
+              "downloadUrl",
+              "contentSha256",
+              "license"
+            ]
+          },
+          "signature": {
+            "type": "string",
+            "description": "HMAC-SHA256 over the canonical payload"
+          },
+          "algorithm": {
+            "const": "HMAC-SHA256"
+          }
+        },
+        "required": [
+          "payload",
+          "signature",
+          "algorithm"
+        ]
+      }
+    },
+    {
+      "resource": "GET /buy/stickers-x402",
+      "description": "x402 sticker pack — signed order confirmation + fulfillment record, in-response",
+      "price": "$0.10",
+      "asset": "USDC",
+      "network": "base-sepolia",
+      "networks": [
+        "base-sepolia",
+        "solana"
+      ],
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "base-sepolia",
+          "asset": "USDC",
+          "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+          "maxAmountRequired": "100000",
+          "mimeType": "application/json"
+        },
+        {
+          "scheme": "exact",
+          "network": "solana",
+          "asset": "USDC",
+          "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+          "maxAmountRequired": "100000",
+          "mimeType": "application/json"
+        }
+      ],
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "orderId": {
+                "type": "string"
+              },
+              "sku": {
+                "type": "string"
+              },
+              "item": {
+                "type": "string"
+              },
+              "kind": {
+                "const": "physical"
+              },
               "fulfillment": {
                 "type": "object",
                 "properties": {
-                  "status": { "const": "accepted" },
-                  "promise": { "type": "string" },
-                  "shipTo": { "type": "object" }
+                  "status": {
+                    "const": "accepted"
+                  },
+                  "promise": {
+                    "type": "string"
+                  },
+                  "shipTo": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "address": {
+                        "type": "string"
+                      },
+                      "country": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "weightGrams": {
+                    "type": "number"
+                  }
                 }
+              },
+              "supportEmail": {
+                "type": "string"
+              },
+              "purchasedAt": {
+                "type": "string",
+                "format": "date-time"
               }
-            }
+            },
+            "required": [
+              "orderId",
+              "sku",
+              "kind",
+              "fulfillment"
+            ]
           },
-          "signature": { "type": "string" },
-          "algorithm": { "const": "HMAC-SHA256" }
-        }
+          "signature": {
+            "type": "string"
+          },
+          "algorithm": {
+            "const": "HMAC-SHA256"
+          }
+        },
+        "required": [
+          "payload",
+          "signature",
+          "algorithm"
+        ]
       }
     },
     {
       "resource": "GET /buy/tee-pay-per-call",
-      "description": "\"Pay per call\" tee (physical) — signed order confirmation + fulfillment record in-response",
+      "description": "\"Pay per call\" tee — signed order confirmation + fulfillment record, in-response",
       "price": "$0.25",
-      "network": "base-sepolia",
       "asset": "USDC",
-      "outputSchema": { "$ref": "#/resources/3/outputSchema" }
+      "network": "base-sepolia",
+      "networks": [
+        "base-sepolia",
+        "solana"
+      ],
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "base-sepolia",
+          "asset": "USDC",
+          "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+          "maxAmountRequired": "250000",
+          "mimeType": "application/json"
+        },
+        {
+          "scheme": "exact",
+          "network": "solana",
+          "asset": "USDC",
+          "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+          "maxAmountRequired": "250000",
+          "mimeType": "application/json"
+        }
+      ],
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "orderId": {
+                "type": "string"
+              },
+              "sku": {
+                "type": "string"
+              },
+              "item": {
+                "type": "string"
+              },
+              "kind": {
+                "const": "physical"
+              },
+              "fulfillment": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "const": "accepted"
+                  },
+                  "promise": {
+                    "type": "string"
+                  },
+                  "shipTo": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "address": {
+                        "type": "string"
+                      },
+                      "country": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "weightGrams": {
+                    "type": "number"
+                  }
+                }
+              },
+              "supportEmail": {
+                "type": "string"
+              },
+              "purchasedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "orderId",
+              "sku",
+              "kind",
+              "fulfillment"
+            ]
+          },
+          "signature": {
+            "type": "string"
+          },
+          "algorithm": {
+            "const": "HMAC-SHA256"
+          }
+        },
+        "required": [
+          "payload",
+          "signature",
+          "algorithm"
+        ]
+      }
     }
   ]
 }

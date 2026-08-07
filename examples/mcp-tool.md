@@ -4,6 +4,11 @@ Any MCP server can wrap this store so Claude (or another MCP client) can buy
 items with a funded wallet. The pattern: one tool per operation, `x402-fetch`
 for payment, artifact returned as the tool result.
 
+The store is dual-rail — every 402 quotes USDC on **Base** and on **Solana**.
+`x402-fetch` settles the EVM rail, which is what this server uses; swap in a
+Solana x402 client if your agent's wallet holds USDC there instead. Nothing else
+about the tools changes: same routes, same prices, same artifacts.
+
 ## Minimal MCP server (TypeScript)
 
 ```ts
@@ -61,6 +66,25 @@ await server.connect(new StdioServerTransport());
     }
   }
 }
+```
+
+## Checking which rails a deployment accepts
+
+Give the agent a free tool so it can budget before it spends:
+
+```ts
+server.tool("payment_rails", "Which chains this store accepts USDC on (free)", {}, async () => {
+  const r = await fetch(`${BASE_URL}/catalog`);
+  const { payment } = await r.json();
+  return { content: [{ type: "text", text: JSON.stringify(payment.rails, null, 2) }] };
+});
+```
+
+```json
+[
+  { "rail": "evm",    "network": "base-sepolia", "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402" },
+  { "rail": "solana", "network": "solana",       "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW" }
+]
 ```
 
 ## Spending safety

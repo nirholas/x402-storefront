@@ -19,11 +19,19 @@ Requires Node 18+.
 cp .env.example .env
 ```
 
-Edit `.env` and set the one required variable:
+`.env.example` ships with working defaults for **both payment rails**, so the
+store runs immediately. Change these two to receive funds yourself:
 
 ```
-PAY_TO_ADDRESS=0xYourWalletAddress   # where USDC lands
+# EVM (Base / Base Sepolia) USDC receive address
+PAY_TO_ADDRESS=0x40252CFDF8B20Ed757D61ff157719F33Ec332402
+# Solana USDC receive address
+SOLANA_PAY_TO_ADDRESS=WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW
 ```
+
+Every paid route offers both rails and the buyer picks. If you only want one,
+delete the other address — that rail is dropped from the 402 challenge with a
+warning, and the remaining rail keeps working.
 
 Optionally set `SIGNING_SECRET` (artifact signatures) — a labeled dev secret is
 used otherwise.
@@ -38,29 +46,63 @@ Your inventory lives in `config/catalog.json`. Each item has a `sku`, `type`
 npm run dev
 ```
 
-The startup banner lists every paid route with its price. The human checkout
-demo is at `http://localhost:4021/`.
+The startup banner lists both payment rails and every paid route with its price:
+
+```
+  Payment rails (USDC — the client picks):
+    evm    base-sepolia   USDC → 0x40252CFDF8B20Ed757D61ff157719F33Ec332402  via https://x402.org/facilitator
+    solana solana         USDC → WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW  via https://x402.org/facilitator
+```
+
+The human checkout demo is at `http://localhost:4021/`.
 
 ## 4. Your first 402
 
 ```bash
-curl -si http://localhost:4021/buy/art-payment-required | head -25
+curl -s http://localhost:4021/buy/art-payment-required \
+  | jq '.accepts[] | {network, asset, payTo, maxAmountRequired}'
 ```
 
-You'll see `HTTP/1.1 402 Payment Required` and a JSON body with an `accepts[]`
-array — the machine-readable quote: price in atomic USDC, the network, your
-`payTo` address, and the USDC contract. This is the entire "checkout page".
+```json
+{
+  "network": "base-sepolia",
+  "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+  "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+  "maxAmountRequired": "10000"
+}
+{
+  "network": "solana",
+  "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+  "maxAmountRequired": "10000"
+}
+```
+
+`HTTP/1.1 402 Payment Required` with an `accepts[]` array holding **one entry per
+rail** — price in atomic USDC (6 decimals, so `10000` = $0.01), the network, the
+`payTo` address, and the USDC contract or mint. This is the entire "checkout
+page", and the client chooses which rail to settle on.
 
 ## 5. A paid call
 
+### Base (EVM)
+
 You need a wallet with Base Sepolia USDC (free from the
-[Circle faucet](https://faucet.circle.com)) and a little Base Sepolia ETH is
-**not** needed — x402 uses gasless EIP-3009 transfers.
+[Circle faucet](https://faucet.circle.com)). Base Sepolia ETH is **not** needed —
+x402 uses gasless EIP-3009 transfers.
 
 ```bash
 export PRIVATE_KEY=0xYourTestKey
 npm run client
 ```
+
+### Solana
+
+Pick the `solana` entry from `accepts[]` instead, sign an SPL USDC transfer to
+its `payTo`, and send the same base64 `X-PAYMENT` envelope. Any Solana-capable
+x402 client does this; in a browser the drop-in payment modal at `/` handles it
+with Phantom automatically. Both rails end at the same 200 and the same signed
+artifact — only `X-PAYMENT-RESPONSE` differs, naming the rail that settled.
 
 `examples/agent-client.ts` browses the catalog, buys the $0.01 SVG, prints the
 signed artifact and the decoded `X-PAYMENT-RESPONSE` settlement receipt,
@@ -96,14 +138,19 @@ appended to `data/orders.json` for the merchant.
 ## 7. Going to mainnet
 
 ```
-NETWORK=base
+NETWORK=base                     # EVM rail: base-sepolia -> base mainnet
+SOLANA_NETWORK=mainnet-beta      # Solana rail (already the default)
 FACILITATOR_URL=https://your-mainnet-facilitator.example
 SIGNING_SECRET=<long random string>
+PUBLIC_BASE_URL=https://store.example.com
 ```
 
 - Use a facilitator that settles on Base mainnet (e.g. Coinbase CDP's x402
-  facilitator).
-- `PAY_TO_ADDRESS` now receives real USDC.
+  facilitator). Point `SOLANA_FACILITATOR_URL` at a Solana-capable facilitator
+  if it differs.
+- `PAY_TO_ADDRESS` and `SOLANA_PAY_TO_ADDRESS` now receive real USDC.
+- `PUBLIC_BASE_URL` makes the `resource` field in your 402 quotes match your
+  public URL — agents and facilitators check it.
 - Put the server behind HTTPS; the `resource` URLs in your 402 quotes should be
   your public URL.
 

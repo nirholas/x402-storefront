@@ -4,8 +4,42 @@ Base URL: your deployment (default `http://localhost:4021`).
 Machine-readable versions: [`openapi.json`](https://github.com/nirholas/x402-storefront/blob/main/openapi.json) ·
 [`/.well-known/x402`](https://github.com/nirholas/x402-storefront/blob/main/public/.well-known/x402)
 
-Paid routes speak x402: an unpaid request returns **402** with `accepts[]`
-payment requirements; retry with a signed `X-PAYMENT` header to get **200**.
+Paid routes speak x402: an unpaid request returns **402** with an `accepts[]`
+array holding **one entry per payment rail**; retry with a signed `X-PAYMENT`
+header to get **200**.
+
+**Pay in USDC on Base or Solana — your client picks the rail.**
+
+| Rail | Network | Asset | payTo |
+| --- | --- | --- | --- |
+| EVM | `base-sepolia` (default) / `base` | USDC `0x036CbD…F7e` (sepolia) | `0x40252CFDF8B20Ed757D61ff157719F33Ec332402` |
+| Solana | `solana` (default) / `solana-devnet` | USDC `EPjFWdd5…Dt1v` | `WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW` |
+
+Every 402 body looks like this (amounts are atomic USDC, 6 decimals):
+
+```json
+{
+  "x402Version": 1,
+  "error": "X-PAYMENT header required — pay in USDC on Base or Solana, your pick.",
+  "accepts": [
+    { "scheme": "exact", "network": "base-sepolia", "maxAmountRequired": "10000",
+      "resource": "http://localhost:4021/buy/art-payment-required",
+      "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+      "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+      "mimeType": "application/json", "maxTimeoutSeconds": 60,
+      "extra": { "name": "USDC", "version": "2" } },
+    { "scheme": "exact", "network": "solana", "maxAmountRequired": "10000",
+      "resource": "http://localhost:4021/buy/art-payment-required",
+      "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+      "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "mimeType": "application/json", "maxTimeoutSeconds": 60,
+      "extra": { "name": "USDC", "decimals": 6 } }
+  ]
+}
+```
+
+On success, `X-PAYMENT-RESPONSE` is base64 JSON:
+`{ "success": true, "rail": "evm" | "solana", "network", "transaction", "payer" }`.
 
 ---
 
@@ -16,8 +50,14 @@ Lists every item with price and buy route.
 ```json
 {
   "store": { "name": "x402 Storefront", "merchantId": "x402-storefront-demo", "shipsTo": ["US","CA","GB","DE","JP"] },
-  "network": "base-sepolia",
-  "payment": { "protocol": "x402", "asset": "USDC", "facilitator": "https://x402.org/facilitator" },
+  "payment": {
+    "protocol": "x402", "asset": "USDC",
+    "note": "Pay in USDC on Base or Solana — your client picks the rail.",
+    "rails": [
+      { "rail": "evm", "network": "base-sepolia", "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402" },
+      { "rail": "solana", "network": "solana", "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW" }
+    ]
+  },
   "items": [
     { "sku": "guide-agentic-commerce", "type": "digital", "name": "Field Guide to Agentic Commerce",
       "price": "$0.05", "buy": "GET /buy/guide-agentic-commerce", "license": "single-purchaser…" }
@@ -76,7 +116,7 @@ Lists every item with price and buy route.
 
 | Status | Case |
 | --- | --- |
-| 402 | No/invalid payment — body carries `accepts[]` requirements |
+| 402 | No/invalid payment — body carries `accepts[]` for both rails |
 | 404 | Unknown SKU |
 
 ---
@@ -106,10 +146,20 @@ whitespace) with `SIGNING_SECRET`.
 
 ## GET /health — free
 
-`{ "ok": true, "service": "x402-storefront", "network": "base-sepolia" }`
+`{ "ok": true, "service": "x402-storefront", "rails": ["base-sepolia", "solana"] }`
 
 ## GET /.well-known/x402 — free
 
-The x402 discovery manifest: every paid resource with price, network, asset,
-and output schema. Index-ready for x402scan.com, the x402 Bazaar, and
-agentic.market.
+The x402 discovery manifest: every paid resource with price, both networks,
+asset, an `accepts[]` preview of the live challenge, and the output schema.
+Index-ready for x402scan.com, the x402 Bazaar, and agentic.market.
+
+---
+
+## POST /api/x402-checkout — free (browser Solana helper)
+
+Used only by the drop-in payment modal on the demo page. `?action=prepare`
+builds an unsigned SPL USDC transfer for the chosen accept; `?action=encode`
+wraps the user-signed transaction into an `X-PAYMENT` envelope. It never holds a
+key and cannot move funds. Returns 503 when
+`@three-ws/x402-payment-modal` is not installed — the Base rail is unaffected.
