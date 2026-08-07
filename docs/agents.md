@@ -21,6 +21,20 @@ Two artifacts are published for machines:
 `openapi.json` (OpenAPI 3.1, includes the 402 response schema) completes the
 trio for codegen-style clients.
 
+Every `accepts[]` entry also carries an `outputSchema` with two halves:
+`input` describes how to build the request (method, path and query parameters)
+and `output` is the JSON Schema of the 200 body you get once you have paid.
+Both are generated from `openapi.json`, so an agent can call `/buy/:sku`
+correctly from the 402 challenge alone, without fetching anything else first.
+
+## Protocol version
+
+This service speaks **x402 v1** — `x402Version: 1` in every challenge. That is
+what the shipped `x402-fetch` clients and the browser payment modal expect, so
+it is the version to code against today. x402 v2 changes the challenge shape
+(`extensions.bazaar.schema`, CAIP-2 network identifiers) and is a planned future
+upgrade for agentcash compatibility; it is not served yet.
+
 ## Paying — two rails, your pick
 
 Every paid route answers an unpaid request with a 402 whose `accepts[]` array

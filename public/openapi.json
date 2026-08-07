@@ -77,7 +77,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/buy/{sku}": {
@@ -193,7 +194,8 @@
           "404": {
             "description": "Asset not found"
           }
-        }
+        },
+        "security": []
       }
     },
     "/verify": {
@@ -239,7 +241,8 @@
           "400": {
             "description": "Malformed request"
           }
-        }
+        },
+        "security": []
       }
     },
     "/health": {
@@ -250,7 +253,8 @@
           "200": {
             "description": "OK"
           }
-        }
+        },
+        "security": []
       }
     },
     "/.well-known/x402": {
@@ -264,7 +268,8 @@
               "application/json": {}
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/api/x402-checkout": {
@@ -326,7 +331,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     }
   },

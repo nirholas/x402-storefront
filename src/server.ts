@@ -18,12 +18,24 @@ import {
 } from "./service.js";
 import { verify } from "./sign.js";
 import { buildRails, describeRails, paywall, type RoutePrices } from "./payments.js";
+import { ROUTE_SCHEMAS } from "./schemas.js";
 import { solanaCheckoutHandler } from "./solana-checkout.js";
 
 const rails = buildRails();
 const catalog = loadCatalog();
 
-/** One exact paid route per SKU, priced from the catalog. */
+/** Request/response contract for `/buy/:sku`, shared by every SKU's route. */
+const buySchema = ROUTE_SCHEMAS["GET /buy/:sku"];
+
+/**
+ * One exact paid route per SKU, priced from the catalog — which is why the
+ * OpenAPI document prices `/buy/{sku}` as `mode: "dynamic"` over the catalog's
+ * min/max, while each concrete route below carries that SKU's fixed price.
+ *
+ * Each route republishes the shared `/buy/:sku` schema with `sku` pinned to
+ * this item, so an agent reading the 402 challenge sees exactly which product
+ * this URL sells rather than a generic string parameter.
+ */
 const routePrices: RoutePrices = {};
 for (const item of catalog.items) {
   routePrices[`GET /buy/${item.sku}`] = {
@@ -34,6 +46,13 @@ for (const item of catalog.items) {
         : "signed order confirmation + fulfillment record, in-response"
     }`,
     mimeType: "application/json",
+    outputSchema: {
+      input: {
+        ...buySchema.input,
+        pathParams: { sku: { type: "string", const: item.sku, description: item.name } },
+      },
+      output: buySchema.output,
+    },
   };
 }
 

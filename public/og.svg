@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="x402 Storefront — pay per item in USDC on Base or Solana">
+  <rect width="1200" height="630" fill="#0b0c10"/>
+  <rect x="0" y="0" width="1200" height="6" fill="#0052ff"/>
+  <g transform="translate(96 150)">
+    <rect width="96" height="96" rx="21" fill="#0052ff"/>
+    <g transform="translate(16 16) scale(1.0)">
+      <path d="M12 20h40l-4.3 36.7a5 5 0 0 1-5 4.3H21.3a5 5 0 0 1-5-4.3L12 20Z"
+            fill="none" stroke="#fff" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M22 23v-6a10 10 0 0 1 20 0v6"
+            fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+    </g>
+  </g>
+  <text x="96" y="330" fill="#e8eaf2" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="76" font-weight="700">x402 Storefront</text>
+  <text x="96" y="396" fill="#9aa1b5" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="34">Sell digital and physical goods for USDC — no account, no checkout flow.</text>
+  <text x="96" y="446" fill="#9aa1b5" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="34">One HTTP 402 challenge, paid on Base or Solana.</text>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="27" fill="#0052ff">
+    <text x="96" y="536">GET /catalog</text>
+    <text x="360" y="536">GET /buy/:sku</text>
+    <text x="640" y="536">HTTP 402 · USDC</text>
+  </g>
+</svg>
