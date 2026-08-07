@@ -53,7 +53,19 @@ export interface RouteSpec {
   maxTimeoutSeconds?: number;
 }
 
-export type RoutePrices = Record<string, RouteSpec>;
+/**
+ * A route's terms, either fixed or resolved per request.
+ *
+ * The resolver form exists so that a route whose price depends on the URL — the
+ * storefront's `GET /buy/:sku` — can still answer **every** request with a 402
+ * before anything else looks at it. The x402scan discovery spec requires that:
+ * a probe must reach a payment challenge rather than a 404, or the route cannot
+ * be registered. Resolvers therefore must not throw and must not 404; quote an
+ * unknown resource instead of rejecting it.
+ */
+export type RouteEntry = RouteSpec | ((req: Request) => RouteSpec);
+
+export type RoutePrices = Record<string, RouteEntry>;
 
 export interface RailConfig {
   id: "evm" | "solana";
@@ -211,9 +223,13 @@ export function paywall(
     const match = compiled.find((c) => c.method === req.method.toUpperCase() && c.test(req.path));
     if (!match) return next(); // free route
 
+    // Resolve per-request terms before anything else touches the request, so a
+    // discovery probe always meets a 402 rather than a validation error.
+    const route = typeof match.route === "function" ? match.route(req) : match.route;
+
     const resource = resourceUrl(req);
     const accepts = rails
-      .map((rail) => requirementsFor(rail, match.route, resource))
+      .map((rail) => requirementsFor(rail, route, resource))
       .filter((r): r is PaymentRequirements => r !== null);
 
     const challenge = (error: string): void => {

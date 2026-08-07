@@ -24,37 +24,61 @@ import { solanaCheckoutHandler } from "./solana-checkout.js";
 const rails = buildRails();
 const catalog = loadCatalog();
 
-/** Request/response contract for `/buy/:sku`, shared by every SKU's route. */
+/** Request/response contract for `/buy/:sku`, generated from `openapi.json`. */
 const buySchema = ROUTE_SCHEMAS["GET /buy/:sku"];
 
+/** Cheapest thing in the store — the quote for a SKU we do not recognise. */
+const floorPrice = catalog.items
+  .map((i) => i.price)
+  .sort((a, b) => Number(a.replace("$", "")) - Number(b.replace("$", "")))[0];
+
 /**
- * One exact paid route per SKU, priced from the catalog — which is why the
- * OpenAPI document prices `/buy/{sku}` as `mode: "dynamic"` over the catalog's
- * min/max, while each concrete route below carries that SKU's fixed price.
+ * `/buy/:sku` is priced per item, which is why the OpenAPI document declares it
+ * `mode: "dynamic"` over the catalog's min/max rather than a single amount. The
+ * price for a given request is resolved here, from the catalog, at request time.
  *
- * Each route republishes the shared `/buy/:sku` schema with `sku` pinned to
- * this item, so an agent reading the 402 challenge sees exactly which product
- * this URL sells rather than a generic string parameter.
+ * The whole `/buy/` space is paywalled — including SKUs the catalog does not
+ * contain. That is deliberate: the x402scan discovery spec requires a probe to
+ * reach a 402 challenge before any existence check runs, so an unknown SKU is
+ * quoted at the store's floor price instead of being rejected with a 404. The
+ * 404 still happens, after payment, in the route handler.
+ *
+ * A recognised SKU republishes the generated schema with `sku` pinned to that
+ * item, so an agent reading the challenge sees exactly which product this URL
+ * sells rather than a bare string parameter.
  */
-const routePrices: RoutePrices = {};
-for (const item of catalog.items) {
-  routePrices[`GET /buy/${item.sku}`] = {
-    price: item.price,
-    description: `${item.name} — ${
-      item.type === "digital"
-        ? "signed time-limited download URL + license, in-response"
-        : "signed order confirmation + fulfillment record, in-response"
-    }`,
-    mimeType: "application/json",
-    outputSchema: {
-      input: {
-        ...buySchema.input,
-        pathParams: { sku: { type: "string", const: item.sku, description: item.name } },
+const routePrices: RoutePrices = {
+  "GET /buy/:sku": (req) => {
+    const sku = decodeURIComponent(req.path.split("/")[2] ?? "");
+    const item = catalog.items.find((i) => i.sku === sku);
+
+    if (!item) {
+      return {
+        price: floorPrice,
+        description: `Unknown SKU "${sku}" — see GET /catalog for what this store sells`,
+        mimeType: "application/json",
+        outputSchema: buySchema,
+      };
+    }
+
+    return {
+      price: item.price,
+      description: `${item.name} — ${
+        item.type === "digital"
+          ? "signed time-limited download URL + license, in-response"
+          : "signed order confirmation + fulfillment record, in-response"
+      }`,
+      mimeType: "application/json",
+      outputSchema: {
+        input: {
+          ...buySchema.input,
+          pathParams: { sku: { type: "string", const: item.sku, description: item.name } },
+        },
+        output: buySchema.output,
       },
-      output: buySchema.output,
-    },
-  };
-}
+    };
+  },
+};
 
 const app = express();
 app.use(express.json());
