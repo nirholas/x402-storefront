@@ -153,6 +153,19 @@
           "404": {
             "description": "Unknown SKU"
           }
+        },
+        "x-payment-info": {
+          "price": {
+            "mode": "dynamic",
+            "currency": "USD",
+            "min": "0.010000",
+            "max": "0.250000"
+          },
+          "protocols": [
+            {
+              "x402": {}
+            }
+          ]
         }
       }
     },
