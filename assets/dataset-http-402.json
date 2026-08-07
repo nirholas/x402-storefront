@@ -1,0 +1,32 @@
+{
+  "dataset": "HTTP 402 / x402 protocol surface",
+  "version": "1.0.0",
+  "protocol": {
+    "statusCode": 402,
+    "reasonPhrase": "Payment Required",
+    "x402Version": 1,
+    "requestHeader": "X-PAYMENT",
+    "responseHeader": "X-PAYMENT-RESPONSE",
+    "defaultAsset": "USDC",
+    "networks": ["base-sepolia", "base"],
+    "facilitator": "https://x402.org/facilitator"
+  },
+  "flow": [
+    { "step": 1, "actor": "client", "action": "Request the resource with no payment" },
+    { "step": 2, "actor": "server", "action": "Respond 402 with accepts[] payment requirements JSON" },
+    { "step": 3, "actor": "client", "action": "Sign an EIP-3009 USDC authorization for the quoted amount" },
+    { "step": 4, "actor": "client", "action": "Retry with X-PAYMENT: base64(signed payload)" },
+    { "step": 5, "actor": "server", "action": "Verify + settle via facilitator, respond 200 with artifact and X-PAYMENT-RESPONSE receipt" }
+  ],
+  "paymentRequirementsFields": [
+    "scheme", "network", "maxAmountRequired", "resource", "description",
+    "mimeType", "payTo", "maxTimeoutSeconds", "asset", "outputSchema", "extra"
+  ],
+  "errorCodes": [
+    { "code": "insufficient_funds", "meaning": "Payer balance below maxAmountRequired" },
+    { "code": "invalid_exact_evm_payload_authorization_valid_before", "meaning": "Authorization expired" },
+    { "code": "invalid_exact_evm_payload_signature", "meaning": "Bad signature over the transfer authorization" },
+    { "code": "unsupported_scheme", "meaning": "Server does not accept the offered scheme" }
+  ],
+  "license": "Attribution license for the purchaser"
+}

@@ -1,0 +1,59 @@
+{
+  "store": {
+    "name": "x402 Storefront",
+    "merchantId": "x402-storefront-demo",
+    "currency": "USDC",
+    "supportEmail": "merchant@example.com",
+    "shipsTo": ["US", "CA", "GB", "DE", "JP"]
+  },
+  "items": [
+    {
+      "sku": "guide-agentic-commerce",
+      "type": "digital",
+      "name": "Field Guide to Agentic Commerce",
+      "description": "A practical markdown guide to building services AI agents can pay for with x402: pricing, artifacts, refundable holds, and discovery.",
+      "price": "$0.05",
+      "asset": "assets/guide-agentic-commerce.md",
+      "contentType": "text/markdown",
+      "license": "single-purchaser, non-transferable, unlimited personal/agent use"
+    },
+    {
+      "sku": "dataset-http-402",
+      "type": "digital",
+      "name": "HTTP 402 Dataset",
+      "description": "A curated JSON dataset of the x402 protocol surface: headers, flows, error codes, and facilitator endpoints.",
+      "price": "$0.02",
+      "asset": "assets/dataset-http-402.json",
+      "contentType": "application/json",
+      "license": "CC-BY-style attribution license for the purchaser"
+    },
+    {
+      "sku": "art-payment-required",
+      "type": "digital",
+      "name": "\"402 Payment Required\" wall art (SVG)",
+      "description": "A crisp vector poster of the best HTTP status code. Scales to any size.",
+      "price": "$0.01",
+      "asset": "assets/art-payment-required.svg",
+      "contentType": "image/svg+xml",
+      "license": "personal display license"
+    },
+    {
+      "sku": "stickers-x402",
+      "type": "physical",
+      "name": "x402 sticker pack",
+      "description": "Five die-cut vinyl stickers celebrating machine-payable HTTP. Ships flat.",
+      "price": "$0.10",
+      "fulfillment": "ships within 5 business days",
+      "weightGrams": 20
+    },
+    {
+      "sku": "tee-pay-per-call",
+      "type": "physical",
+      "name": "\"Pay per call\" tee",
+      "description": "Heavyweight cotton tee, monospace chest print: HTTP/1.1 402 Payment Required.",
+      "price": "$0.25",
+      "fulfillment": "ships within 10 business days",
+      "weightGrams": 180
+    }
+  ]
+}

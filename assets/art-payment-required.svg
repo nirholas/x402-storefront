@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-label="402 Payment Required poster">
+  <rect width="800" height="1000" fill="#0a0a0f"/>
+  <rect x="40" y="40" width="720" height="920" fill="none" stroke="#0052ff" stroke-width="4"/>
+  <text x="400" y="380" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="200" fill="#0052ff" font-weight="bold">402</text>
+  <text x="400" y="470" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="42" fill="#e8e8f0">PAYMENT REQUIRED</text>
+  <text x="400" y="560" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="22" fill="#8888a0">HTTP/1.1 402 · X-PAYMENT · USDC on Base</text>
+  <text x="400" y="880" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" fill="#555570">the best status code finally has a job</text>
+</svg>

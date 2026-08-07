@@ -1,0 +1,87 @@
+{
+  "x402Version": 1,
+  "name": "x402-storefront",
+  "description": "Self-hosted store with x402 checkout — sell digital goods (delivered in-response) and physical goods (signed order confirmation)",
+  "resources": [
+    {
+      "resource": "GET /buy/guide-agentic-commerce",
+      "description": "Field Guide to Agentic Commerce (digital, markdown) — signed time-limited download URL + license in-response",
+      "price": "$0.05",
+      "network": "base-sepolia",
+      "asset": "USDC",
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "orderId": { "type": "string" },
+              "sku": { "type": "string" },
+              "kind": { "const": "digital" },
+              "downloadUrl": { "type": "string" },
+              "downloadExpiresAt": { "type": "string", "format": "date-time" },
+              "contentSha256": { "type": "string" },
+              "license": { "type": "string" }
+            }
+          },
+          "signature": { "type": "string" },
+          "algorithm": { "const": "HMAC-SHA256" }
+        }
+      }
+    },
+    {
+      "resource": "GET /buy/dataset-http-402",
+      "description": "HTTP 402 Dataset (digital, JSON) — signed time-limited download URL + license in-response",
+      "price": "$0.02",
+      "network": "base-sepolia",
+      "asset": "USDC",
+      "outputSchema": { "$ref": "#/resources/0/outputSchema" }
+    },
+    {
+      "resource": "GET /buy/art-payment-required",
+      "description": "\"402 Payment Required\" wall art (digital, SVG) — signed time-limited download URL + license in-response",
+      "price": "$0.01",
+      "network": "base-sepolia",
+      "asset": "USDC",
+      "outputSchema": { "$ref": "#/resources/0/outputSchema" }
+    },
+    {
+      "resource": "GET /buy/stickers-x402",
+      "description": "x402 sticker pack (physical) — signed order confirmation + fulfillment record in-response",
+      "price": "$0.10",
+      "network": "base-sepolia",
+      "asset": "USDC",
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "orderId": { "type": "string" },
+              "sku": { "type": "string" },
+              "kind": { "const": "physical" },
+              "fulfillment": {
+                "type": "object",
+                "properties": {
+                  "status": { "const": "accepted" },
+                  "promise": { "type": "string" },
+                  "shipTo": { "type": "object" }
+                }
+              }
+            }
+          },
+          "signature": { "type": "string" },
+          "algorithm": { "const": "HMAC-SHA256" }
+        }
+      }
+    },
+    {
+      "resource": "GET /buy/tee-pay-per-call",
+      "description": "\"Pay per call\" tee (physical) — signed order confirmation + fulfillment record in-response",
+      "price": "$0.25",
+      "network": "base-sepolia",
+      "asset": "USDC",
+      "outputSchema": { "$ref": "#/resources/3/outputSchema" }
+    }
+  ]
+}

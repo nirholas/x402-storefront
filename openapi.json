@@ -1,0 +1,230 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "x402-storefront",
+    "version": "0.1.0",
+    "description": "Self-hosted store with x402 checkout — sell digital goods (delivered in-response) and physical goods (signed order confirmation). Paid routes use the x402 protocol (USDC on Base).",
+    "license": { "name": "Apache-2.0", "identifier": "Apache-2.0" }
+  },
+  "servers": [{ "url": "http://localhost:4021" }],
+  "paths": {
+    "/catalog": {
+      "get": {
+        "summary": "List items with prices (free)",
+        "operationId": "getCatalog",
+        "responses": {
+          "200": {
+            "description": "Catalog",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "store": { "type": "object" },
+                    "network": { "type": "string" },
+                    "payment": { "type": "object" },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "sku": { "type": "string" },
+                          "type": { "type": "string", "enum": ["digital", "physical"] },
+                          "name": { "type": "string" },
+                          "description": { "type": "string" },
+                          "price": { "type": "string" },
+                          "buy": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/buy/{sku}": {
+      "get": {
+        "summary": "Buy an item (x402 paid, price per item — see /catalog)",
+        "operationId": "buyItem",
+        "parameters": [
+          { "name": "sku", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "name", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Shipping name (physical items)" },
+          { "name": "address", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Shipping address (physical items)" },
+          { "name": "country", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Shipping country (physical items)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed purchase artifact — digital download grant or physical order confirmation",
+            "headers": {
+              "X-PAYMENT-RESPONSE": { "description": "Base64 settlement receipt", "schema": { "type": "string" } }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    { "$ref": "#/components/schemas/SignedDigitalPurchase" },
+                    { "$ref": "#/components/schemas/SignedPhysicalPurchase" }
+                  ]
+                }
+              }
+            }
+          },
+          "402": { "$ref": "#/components/responses/PaymentRequired" },
+          "404": { "description": "Unknown SKU" }
+        }
+      }
+    },
+    "/download/{token}": {
+      "get": {
+        "summary": "Redeem a signed download token (free)",
+        "operationId": "download",
+        "parameters": [
+          { "name": "token", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Asset bytes with the item's Content-Type" },
+          "403": { "description": "Token expired or tampered" },
+          "404": { "description": "Asset not found" }
+        }
+      }
+    },
+    "/verify": {
+      "get": {
+        "summary": "Verify a signed artifact (free)",
+        "operationId": "verifySignature",
+        "parameters": [
+          { "name": "payload", "in": "query", "required": true, "schema": { "type": "string" }, "description": "URL-encoded JSON payload" },
+          { "name": "signature", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Hex HMAC-SHA256 signature" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verification result",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "valid": { "type": "boolean" } } } } }
+          },
+          "400": { "description": "Malformed request" }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health check (free)",
+        "operationId": "health",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/.well-known/x402": {
+      "get": {
+        "summary": "Machine-readable x402 price sheet (free)",
+        "operationId": "wellKnownX402",
+        "responses": { "200": { "description": "x402 discovery manifest", "content": { "application/json": {} } } }
+      }
+    }
+  },
+  "components": {
+    "responses": {
+      "PaymentRequired": {
+        "description": "Payment required — pay via x402 and retry with the X-PAYMENT header",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "x402Version": { "type": "integer" },
+                "error": { "type": "string" },
+                "accepts": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/PaymentRequirements" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "PaymentRequirements": {
+        "type": "object",
+        "description": "x402 payment requirements (one accepted payment option)",
+        "properties": {
+          "scheme": { "type": "string", "enum": ["exact"] },
+          "network": { "type": "string", "enum": ["base-sepolia", "base"] },
+          "maxAmountRequired": { "type": "string", "description": "Atomic USDC units" },
+          "resource": { "type": "string", "format": "uri" },
+          "description": { "type": "string" },
+          "mimeType": { "type": "string" },
+          "payTo": { "type": "string", "description": "0x… receiving address" },
+          "maxTimeoutSeconds": { "type": "integer" },
+          "asset": { "type": "string", "description": "USDC contract address" },
+          "outputSchema": { "type": "object" },
+          "extra": { "type": "object" }
+        },
+        "required": ["scheme", "network", "maxAmountRequired", "resource", "payTo", "asset"]
+      },
+      "SignedDigitalPurchase": {
+        "type": "object",
+        "properties": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "orderId": { "type": "string" },
+              "sku": { "type": "string" },
+              "item": { "type": "string" },
+              "kind": { "type": "string", "const": "digital" },
+              "downloadUrl": { "type": "string" },
+              "downloadExpiresAt": { "type": "string", "format": "date-time" },
+              "contentType": { "type": "string" },
+              "contentSha256": { "type": "string" },
+              "license": { "type": "string" },
+              "purchasedAt": { "type": "string", "format": "date-time" }
+            },
+            "required": ["orderId", "sku", "kind", "downloadUrl", "downloadExpiresAt", "contentSha256"]
+          },
+          "signature": { "type": "string" },
+          "algorithm": { "type": "string", "const": "HMAC-SHA256" },
+          "canonicalization": { "type": "string" }
+        },
+        "required": ["payload", "signature", "algorithm"]
+      },
+      "SignedPhysicalPurchase": {
+        "type": "object",
+        "properties": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "orderId": { "type": "string" },
+              "sku": { "type": "string" },
+              "item": { "type": "string" },
+              "kind": { "type": "string", "const": "physical" },
+              "fulfillment": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "string", "const": "accepted" },
+                  "promise": { "type": "string" },
+                  "shipTo": {
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string" },
+                      "address": { "type": "string" },
+                      "country": { "type": "string" }
+                    }
+                  },
+                  "weightGrams": { "type": "number" }
+                }
+              },
+              "supportEmail": { "type": "string" },
+              "purchasedAt": { "type": "string", "format": "date-time" }
+            },
+            "required": ["orderId", "sku", "kind", "fulfillment"]
+          },
+          "signature": { "type": "string" },
+          "algorithm": { "type": "string", "const": "HMAC-SHA256" },
+          "canonicalization": { "type": "string" }
+        },
+        "required": ["payload", "signature", "algorithm"]
+      }
+    }
+  }
+}

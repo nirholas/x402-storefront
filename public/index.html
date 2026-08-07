@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>x402 Storefront — pay with USDC, no account</title>
+<style>
+  :root {
+    --accent: #0052ff;
+    --bg: #ffffff; --fg: #111319; --muted: #5a6072; --card: #f5f6fa; --border: #e3e5ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0b0c10; --fg: #e8eaf2; --muted: #9aa1b5; --card: #15171e; --border: #262a35; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+  header h1 { font-size: 1.8rem; margin: 0 0 .3rem; }
+  header p { color: var(--muted); margin: 0 0 2rem; }
+  .badge { display: inline-block; font-size: .75rem; padding: .15rem .55rem; border-radius: 999px;
+           background: var(--accent); color: #fff; vertical-align: middle; margin-left: .5rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem; display: flex; flex-direction: column; }
+  .card h3 { margin: 0 0 .35rem; font-size: 1.05rem; }
+  .card .type { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .card p { color: var(--muted); font-size: .88rem; flex: 1; }
+  .row { display: flex; align-items: center; justify-content: space-between; margin-top: .8rem; }
+  .price { font-weight: 700; font-variant-numeric: tabular-nums; }
+  button[data-x402-endpoint] {
+    background: var(--accent); color: #fff; border: 0; border-radius: 8px;
+    padding: .5rem .95rem; font-size: .9rem; font-weight: 600; cursor: pointer;
+  }
+  button[data-x402-endpoint]:hover { filter: brightness(1.1); }
+  #result { margin-top: 2.2rem; display: none; }
+  #result.show { display: block; }
+  #result h2 { font-size: 1.15rem; }
+  pre { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+        padding: 1rem; overflow-x: auto; font-size: .8rem; }
+  a { color: var(--accent); }
+  footer { margin-top: 3rem; color: var(--muted); font-size: .85rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>x402 Storefront <span class="badge">USDC · Base</span></h1>
+    <p>Buy digital and physical goods with one click — no account, no card form.
+       Payments settle over the <a href="https://x402.org">x402 protocol</a>.
+       Agents: see <a href="skill.md">skill.md</a> and <a href="/.well-known/x402">/.well-known/x402</a>.</p>
+  </header>
+
+  <div class="grid" id="catalog">Loading catalog…</div>
+
+  <section id="result">
+    <h2>Your purchase</h2>
+    <div id="artifact-summary"></div>
+    <pre id="artifact-json"></pre>
+  </section>
+
+  <footer>
+    Powered by the drop-in <code>@three-ws/x402-payment-modal</code> — sign-in-with-wallet
+    re-entry and per-site spending caps built in. Source:
+    <a href="https://github.com/nirholas/x402-storefront">github.com/nirholas/x402-storefront</a>
+  </footer>
+</div>
+
+<script type="module" src="https://unpkg.com/@three-ws/x402-payment-modal"></script>
+<script>
+  const grid = document.getElementById("catalog");
+
+  fetch("/catalog").then(r => r.json()).then(({ items }) => {
+    grid.innerHTML = "";
+    for (const item of items) {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <span class="type">${item.type}</span>
+        <h3>${item.name}</h3>
+        <p>${item.description}</p>
+        <div class="row">
+          <span class="price">${item.price}</span>
+          <button
+            data-x402-endpoint="/buy/${item.sku}"
+            data-x402-method="GET"
+            data-x402-merchant="x402 Storefront"
+            data-x402-action="Buy">Pay &amp; buy</button>
+        </div>`;
+      grid.appendChild(card);
+    }
+  }).catch(() => { grid.textContent = "Could not load catalog — is the server running?"; });
+
+  addEventListener("x402:result", (e) => {
+    const artifact = e.detail?.data ?? e.detail;
+    const box = document.getElementById("result");
+    const summary = document.getElementById("artifact-summary");
+    box.classList.add("show");
+    const p = artifact?.payload;
+    if (p?.kind === "digital") {
+      summary.innerHTML = `<p><strong>${p.item}</strong> — order <code>${p.orderId}</code>.
+        <a href="${p.downloadUrl}">Download your item</a> (link valid until ${p.downloadExpiresAt}).</p>`;
+    } else if (p?.kind === "physical") {
+      summary.innerHTML = `<p><strong>${p.item}</strong> — order <code>${p.orderId}</code> accepted.
+        ${p.fulfillment.promise}. Keep the signed confirmation below as your receipt.</p>`;
+    } else {
+      summary.innerHTML = "<p>Payment complete — signed artifact below.</p>";
+    }
+    document.getElementById("artifact-json").textContent = JSON.stringify(artifact, null, 2);
+    box.scrollIntoView({ behavior: "smooth" });
+  });
+</script>
+</body>
+</html>
