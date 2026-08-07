@@ -83,7 +83,9 @@ no whitespace) with the store's `SIGNING_SECRET`.
 
 - Protocol: **x402** (HTTP 402 → signed USDC authorization → retry with `X-PAYMENT` header)
 - Asset: **USDC** on both rails
-- Facilitator: `https://x402.org/facilitator` (override: `FACILITATOR_URL`)
+- Facilitators are rail-specific: `https://x402.org/facilitator` settles the EVM
+  rail (override: `FACILITATOR_URL`), `https://facilitator.payai.network` settles
+  the Solana rail (override: `SOLANA_FACILITATOR_URL`)
 
 | Rail | Network | payTo |
 | --- | --- | --- |

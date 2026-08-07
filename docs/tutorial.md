@@ -140,7 +140,8 @@ appended to `data/orders.json` for the merchant.
 ```
 NETWORK=base                     # EVM rail: base-sepolia -> base mainnet
 SOLANA_NETWORK=mainnet-beta      # Solana rail (already the default)
-FACILITATOR_URL=https://your-mainnet-facilitator.example
+FACILITATOR_URL=https://your-mainnet-facilitator.example   # EVM rail
+SOLANA_FACILITATOR_URL=https://facilitator.payai.network    # Solana rail (default)
 SIGNING_SECRET=<long random string>
 PUBLIC_BASE_URL=https://store.example.com
 ```
