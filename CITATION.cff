@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it as below.
+title: "x402-storefront"
+abstract: "Self-hosted store with x402 checkout: sell digital goods (delivered in-response) and physical goods (signed order confirmation)"
+license: Apache-2.0
+repository-code: "https://github.com/nirholas/x402-storefront"
+url: "https://three.ws"
+authors:
+  - name: three.ws
+    website: "https://three.ws"
