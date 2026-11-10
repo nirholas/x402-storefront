@@ -1,0 +1,23 @@
+{
+  "name": "x402-storefront",
+  "owner": {
+    "name": "nirholas"
+  },
+  "description": "Self-hosted store with x402 checkout: digital goods delivered in the response, physical goods with signed order confirmations.",
+  "plugins": [
+    {
+      "name": "x402-storefront",
+      "source": "./plugins/x402-storefront",
+      "description": "Self-hosted store with x402 checkout: digital goods delivered in the response, physical goods with signed order confirmations.",
+      "category": "finance",
+      "tags": [
+        "x402",
+        "storefront",
+        "checkout",
+        "ecommerce",
+        "usdc",
+        "ai-agents"
+      ]
+    }
+  ]
+}

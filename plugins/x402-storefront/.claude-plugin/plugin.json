@@ -1,0 +1,19 @@
+{
+  "name": "x402-storefront",
+  "version": "0.1.0",
+  "description": "Self-hosted store with x402 checkout: digital goods delivered in the response, physical goods with signed order confirmations.",
+  "author": {
+    "name": "nirholas"
+  },
+  "repository": "https://github.com/nirholas/x402-storefront",
+  "homepage": "https://nirholas.github.io/x402-storefront/",
+  "license": "Apache-2.0",
+  "keywords": [
+    "x402",
+    "storefront",
+    "checkout",
+    "ecommerce",
+    "usdc",
+    "ai-agents"
+  ]
+}
